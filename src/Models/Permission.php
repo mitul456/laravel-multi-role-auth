@@ -1,0 +1,15 @@
+<?php
+
+namespace Mitul456\LaravelMultiRoleAuth\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Permission extends Model
+{
+    protected $fillable = ['name', 'guard_name', 'description'];
+
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'permission_role');
+    }
+}
