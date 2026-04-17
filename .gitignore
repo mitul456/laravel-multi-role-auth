@@ -1,0 +1,5 @@
+echo "/vendor/" >> .gitignore
+echo "/.idea/" >> .gitignore
+echo "/.vscode/" >> .gitignore
+echo "composer.lock" >> .gitignore
+echo ".DS_Store" >> .gitignore

@@ -15,10 +15,15 @@ trait HasRoles
 
     public function hasRole($roles): bool
     {
+        // Ensure roles are loaded
+        if (!$this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+        
         if (is_string($roles)) {
             return $this->roles->contains('name', $roles);
         }
-
+        
         if (is_array($roles)) {
             foreach ($roles as $role) {
                 if ($this->hasRole($role)) {
@@ -27,48 +32,60 @@ trait HasRoles
             }
             return false;
         }
-
+        
+        if ($roles instanceof Role) {
+            return $this->roles->contains('id', $roles->id);
+        }
+        
         return false;
     }
 
     public function hasAllRoles($roles): bool
     {
+        if (!$this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+        
         if (is_string($roles)) {
             return $this->hasRole($roles);
         }
-
+        
         if (is_array($roles)) {
-            foreach ($roles as $role) {
-                if (!$this->hasRole($role)) {
-                    return false;
-                }
-            }
-            return true;
+            $userRoleNames = $this->roles->pluck('name')->toArray();
+            return !array_diff($roles, $userRoleNames);
         }
-
+        
         return false;
     }
 
     public function assignRole($role)
     {
         if (is_string($role)) {
-            $role = Role::where('name', $role)->firstOrFail();
+            $role = Role::where('name', $role)->first();
+            if (!$role) {
+                throw new \Exception("Role '{$role}' not found");
+            }
         }
-
+        
         if (!$this->roles->contains($role)) {
             $this->roles()->attach($role);
+            $this->load('roles'); // Reload after assignment
         }
-
+        
         return $this;
     }
 
     public function removeRole($role)
     {
         if (is_string($role)) {
-            $role = Role::where('name', $role)->firstOrFail();
+            $role = Role::where('name', $role)->first();
         }
-
-        $this->roles()->detach($role);
+        
+        if ($role && $this->roles->contains($role)) {
+            $this->roles()->detach($role);
+            $this->load('roles'); // Reload after removal
+        }
+        
         return $this;
     }
 
@@ -85,11 +102,17 @@ trait HasRoles
         }
         
         $this->roles()->sync($roleIds);
+        $this->load('roles'); // Reload after sync
+        
         return $this;
     }
 
     public function getPrimaryRole()
     {
+        if (!$this->relationLoaded('roles')) {
+            $this->load('roles');
+        }
+        
         $roleHierarchy = Config::get('multirole.role_hierarchy', []);
         
         foreach ($roleHierarchy as $priorityRole) {
@@ -106,13 +129,17 @@ trait HasRoles
         if ($this->hasRole('SuperAdmin')) {
             return true;
         }
-
+        
+        if (!$this->relationLoaded('roles')) {
+            $this->load('roles.permissions');
+        }
+        
         foreach ($this->roles as $role) {
             if ($role->permissions->contains('name', $permission)) {
                 return true;
             }
         }
-
+        
         return false;
     }
 

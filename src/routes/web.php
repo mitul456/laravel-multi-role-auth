@@ -5,6 +5,7 @@ use Mitul456\LaravelMultiRoleAuth\Http\Controllers\RoleController;
 use Mitul456\LaravelMultiRoleAuth\Http\Controllers\PermissionController;
 use Mitul456\LaravelMultiRoleAuth\Http\Controllers\RoleAssignmentController;
 
+
 Route::middleware(['web', 'auth'])->group(function () {
     // Role Management Routes
     Route::prefix('admin')->middleware('role:Admin|SuperAdmin')->group(function () {
